@@ -149,7 +149,7 @@ func serialSend(port *serial.Port, msgtype uint8, message string) {
 	copy(sendbuf[2:6], sizebuf)
 
 	sendbuf[6] = byte(msgtype)
-	copy(sendbuf[7:strlen-1], []byte(message))
+	copy(sendbuf[7:int(strlen)+headerLength], []byte(message))
 
 	n, err := port.Write(sendbuf)
 	if err != nil {
@@ -157,6 +157,7 @@ func serialSend(port *serial.Port, msgtype uint8, message string) {
 		log.Println(err)
 	}
 
+	//fmt.Print(sendbuf)
 	fmt.Printf("Bytes sent: %d\n", n)
 }
 
@@ -319,7 +320,7 @@ func manetherenResponse(msgtype uint8, otherService ...string) string {
 	if sPath == "" {
 		return ""
 	}
-	var path string = "http://manetheren/service/" + sPath
+	var path string = "http://manetheren/services/" + sPath
 
 	// make HTTP request
 	resp, err := http.Get(path)
