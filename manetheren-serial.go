@@ -346,7 +346,7 @@ func main() {
 
 	// get name of attempted COM port
 	if len(args) > 0 {
-		name = args[1]
+		name = args[0]
 	}
 
 	// create the config object
