@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/binary"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net"
@@ -73,32 +74,53 @@ func serialServer(port *serial.Port, wg sync.WaitGroup) {
 	defer wg.Done()
 
 	// sit and wait for inputs
+	var prevByte byte = 0x00
+	var nextBuf = make([]byte, 1)
+
 	for {
 
-		// we'll sit here and wait for something to come along our port
-		metabuf := make([]byte, headerLength)
+		// read single lines in until we find our starting point
+		_, err := port.Read(nextBuf)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// if it isn't the start of our sequence move along
+		if nextBuf[0] != manetherenByte || prevByte != startByte {
+			prevByte = nextBuf[0]
+			continue
+		}
+
+		// if it is a good start sequence, lets read it
+		metabuf := make([]byte, headerLength-2)
+
+		// we're going to scan until we find the right format
+
 		n, err := port.Read(metabuf)
 		if err != nil {
 			log.Fatal(err)
 		}
 		// clear the buffer if our format isn't good
-		if n < headerLength ||
-			metabuf[0] != startByte ||
-			metabuf[1] != manetherenByte {
+		if n < headerLength-2 {
+			fmt.Println("\nDiscarding improper format")
 			continue
 		}
 
 		// look up reported message size
-		msgsize := binary.BigEndian.Uint32(metabuf[2:6])
+		msgsize := binary.BigEndian.Uint32(metabuf[:4])
 		fmt.Println(msgsize)
 		msgbuf := make([]byte, msgsize)
 
 		// read from buffer
-		n, err = port.Read(msgbuf)
+		n, err = io.ReadFull(port, msgbuf) //port.Read(msgbuf)
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
 		message := string(msgbuf)
-		fmt.Println("message recieved: " + message)
+		fmt.Printf("Bytes read: %d, message recieved %s\n", n, message)
 
-		go handleSerialMessage(port, uint8(metabuf[6]), message)
+		go handleSerialMessage(port, uint8(metabuf[4]), message)
 
 	}
 }
