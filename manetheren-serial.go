@@ -96,14 +96,9 @@ func serialServer(port *serial.Port, wg sync.WaitGroup) {
 
 		// we're going to scan until we find the right format
 
-		n, err := port.Read(metabuf)
+		n, err := io.ReadFull(port, metabuf)
 		if err != nil {
 			log.Fatal(err)
-		}
-		// clear the buffer if our format isn't good
-		if n < headerLength-2 {
-			fmt.Println("\nDiscarding improper format")
-			continue
 		}
 
 		// look up reported message size
@@ -112,7 +107,7 @@ func serialServer(port *serial.Port, wg sync.WaitGroup) {
 		msgbuf := make([]byte, msgsize)
 
 		// read from buffer
-		n, err = io.ReadFull(port, msgbuf) //port.Read(msgbuf)
+		n, err = io.ReadFull(port, msgbuf)
 		if err != nil {
 			fmt.Println(err)
 			continue
@@ -167,7 +162,7 @@ func serialSend(port *serial.Port, msgtype uint8, message string) {
 	sendbuf[0] = startByte
 	sendbuf[1] = manetherenByte
 
-	binary.BigEndian.PutUint32(sizebuf, strlen+uint32(headerLength))
+	binary.BigEndian.PutUint32(sizebuf, strlen)
 	copy(sendbuf[2:6], sizebuf)
 
 	sendbuf[6] = byte(msgtype)
@@ -176,6 +171,11 @@ func serialSend(port *serial.Port, msgtype uint8, message string) {
 	n, err := port.Write(sendbuf)
 	if err != nil {
 		log.Println("failed to send")
+		log.Println(err)
+	}
+	err = port.Flush()
+	if err != nil {
+		log.Println("Failed to flush")
 		log.Println(err)
 	}
 
