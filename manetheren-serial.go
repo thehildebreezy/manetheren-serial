@@ -76,6 +76,8 @@ func serialServer(port *serial.Port, wg sync.WaitGroup) {
 	// sit and wait for inputs
 	var prevByte byte = 0x00
 	var nextBuf = make([]byte, 1)
+	// if it is a good start sequence, lets read it
+	var metabuf = make([]byte, headerLength-2)
 
 	for {
 
@@ -91,9 +93,6 @@ func serialServer(port *serial.Port, wg sync.WaitGroup) {
 			continue
 		}
 
-		// if it is a good start sequence, lets read it
-		metabuf := make([]byte, headerLength-2)
-
 		// we're going to scan until we find the right format
 
 		n, err := io.ReadFull(port, metabuf)
@@ -105,18 +104,21 @@ func serialServer(port *serial.Port, wg sync.WaitGroup) {
 		msgsize := binary.BigEndian.Uint32(metabuf[:4])
 		fmt.Println(msgsize)
 		msgbuf := make([]byte, msgsize)
+		msgbuf = nil
 
 		// read from buffer
 		n, err = io.ReadFull(port, msgbuf)
 		if err != nil {
 			fmt.Println(err)
+			msgbuf = nil
 			continue
 		}
 		message := string(msgbuf)
+		msgbuf = nil
+
 		fmt.Printf("Bytes read: %d, message recieved %s\n", n, message)
-
 		go handleSerialMessage(port, uint8(metabuf[4]), message)
-
+		// handleSerialMessage(port, uint8(metabuf[4]), message)
 	}
 }
 
@@ -173,11 +175,6 @@ func serialSend(port *serial.Port, msgtype uint8, message string) {
 		log.Println("failed to send")
 		log.Println(err)
 	}
-	err = port.Flush()
-	if err != nil {
-		log.Println("Failed to flush")
-		log.Println(err)
-	}
 
 	//fmt.Print(sendbuf)
 	fmt.Printf("Bytes sent: %d\n", n)
@@ -219,6 +216,7 @@ func handleTCPMessage(port *serial.Port, msgtype uint8, message string) {
 	// to the far end
 	if msgtype >= requestWeather {
 		serialSend(port, msgtype, message)
+		fmt.Println("TCP Request complete")
 	} else {
 		// but if we are on the manetheren end, we still want
 		// this servelet interface to publish a forced update
@@ -245,11 +243,15 @@ func tcpServer(port *serial.Port, wg sync.WaitGroup) {
 
 	// loop and wait for connections
 	for {
+		fmt.Println("Listening for new connection")
 		conn, err := ln.Accept()
 		if err != nil {
 			fmt.Println("Error establishing a connection.")
 		}
+
+		fmt.Println("Connection received")
 		go connectionRequest(port, conn)
+		// connectionRequest(port, conn)
 	}
 }
 
@@ -280,8 +282,9 @@ func connectionRequest(port *serial.Port, conn net.Conn) {
 	msgsize := binary.BigEndian.Uint32(data[2:6])
 	fmt.Printf("TCP Message size: %d\n", msgsize)
 
-	go handleTCPMessage(port, uint8(data[6]), string(data[7:]))
-
+	// we'll want to block I think
+	handleTCPMessage(port, uint8(data[6]), string(data[7:]))
+	fmt.Println("connection request complete")
 }
 
 // returns the service type string, based on the msgtype
@@ -375,6 +378,7 @@ func main() {
 	config := &serial.Config{Name: name, Baud: 9600}
 	// open the port
 	port, err := serial.OpenPort(config)
+	defer port.Close()
 
 	if err != nil {
 		log.Fatal(err)

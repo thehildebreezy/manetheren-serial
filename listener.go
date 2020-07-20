@@ -7,7 +7,7 @@ import (
 	"net"
 )
 
-func main() {
+func main3() {
 
 	ln, err := net.Listen("tcp", ":50998")
 	defer ln.Close()

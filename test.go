@@ -48,7 +48,7 @@ func recv() {
 
 }
 
-func main() {
+func main2() {
 
 	// access the applications arguments from startup
 	args := os.Args[1:]
