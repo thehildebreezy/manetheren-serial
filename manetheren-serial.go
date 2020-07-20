@@ -104,7 +104,6 @@ func serialServer(port *serial.Port, wg sync.WaitGroup) {
 		msgsize := binary.BigEndian.Uint32(metabuf[:4])
 		fmt.Println(msgsize)
 		msgbuf := make([]byte, msgsize)
-		msgbuf = nil
 
 		// read from buffer
 		n, err = io.ReadFull(port, msgbuf)
