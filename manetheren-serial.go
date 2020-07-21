@@ -295,32 +295,37 @@ func servicePath(msgtype uint8, extension string, otherService ...string) string
 		adjustedType = msgtype + requestWeather
 	}
 
+	extra := ""
+	if len(otherService) > 0 {
+		extra = otherService[0]
+	}
+
 	// check for possibilities
 	switch adjustedType {
 	case requestWeather:
-		return "weather" + extension
+		return "weather" + extension + extra
 	case requestForecast:
-		return "forecast" + extension
+		return "forecast" + extension + extra
 	case requestQuote:
-		return "quote" + extension
+		return "quote" + extension + extra
 	case requestTime:
-		return "time" + extension
+		return "time" + extension + extra
 	case requestCalendar:
-		return "calendar" + extension
+		return "calendar" + extension + extra
 	case requestTasks:
-		return "tasks" + extension
+		return "tasks" + extension + extra
 	case requestConfig:
 		if len(otherService) == 0 {
 			fmt.Println("Not enough values to other service request")
 			return ""
 		}
-		return "config" + extension + "?opts=" + otherService[0]
+		return "config" + extension + extra
 	case requestOther:
 		if len(otherService) == 0 {
 			fmt.Println("Not enough values to other service request")
 			return ""
 		}
-		return otherService[0] + extension
+		return extra
 	default:
 		fmt.Println("Improper message type")
 		return ""
