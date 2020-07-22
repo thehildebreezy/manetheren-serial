@@ -199,7 +199,7 @@ func tcpSend(msgType uint8, message string) {
 	}
 
 	// send a JSON message with served data
-	fmt.Fprintf(conn, "{type:\"%s\",message:%s}",
+	fmt.Fprintf(conn, "{\"type\":\"%s\",\"message\":%s}",
 		servicePath(msgType, ""),
 		message)
 }
