@@ -133,6 +133,9 @@ func handleSerialMessage(port *serial.Port, msgtype uint8, message string) {
 	if msgtype >= requestWeather {
 		// get the requested service
 		response := manetherenResponse(msgtype, message)
+		if response == "" {
+			return
+		}
 		// calculate the response service type
 		serveType := msgtype - requestWeather
 		// send back as a service type
@@ -196,7 +199,7 @@ func tcpSend(msgType uint8, message string) {
 	}
 
 	// send a JSON message with served data
-	fmt.Fprintf(conn, "{type:\"%s\",message:%s}",
+	fmt.Fprintf(conn, "{\"type\":\"%s\",\"message\":%s}",
 		servicePath(msgType, ""),
 		message)
 }
