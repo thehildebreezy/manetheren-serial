@@ -192,11 +192,11 @@ func tcpSend(msgType uint8, message string) {
 
 	// open the TCP connection
 	conn, err := net.Dial("tcp", ":"+tcpClientPort)
-	defer conn.Close()
 	if err != nil {
 		fmt.Println("TCP connection to local display failed")
 		return
 	}
+	defer conn.Close()
 
 	// send a JSON message with served data
 	fmt.Fprintf(conn, "{\"type\":\"%s\",\"message\":%s}",
